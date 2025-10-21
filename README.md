@@ -1,3 +1,5 @@
+![](img/robot_writing.png)
+
 # RSS Weekly Digest
 
 Automated system to fetch, analyze, and deliver weekly digests from RSS feeds. Powered by AI to summarize and categorize articles based on your interests.
