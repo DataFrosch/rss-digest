@@ -134,10 +134,6 @@ uv sync
    - Create a new API key
    - Copy your API key (OPENROUTER_API_KEY)
 
-2. **Add Credits** (Optional)
-   - Add $5-10 in credits
-   - Gemini Flash 1.5 is very cheap (~$0.01-0.05 per week)
-
 ### 6. Set Up SendGrid
 
 1. **Create Account**
