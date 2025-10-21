@@ -1,18 +1,15 @@
 [project]
 name = "rss-digest"
-version = "0.1.0"
-description = "Automated system to fetch, analyze, and deliver weekly digests from RSS feeds"
+version = "0.2.0"
+description = "Simplified automated system to fetch, analyze, and deliver weekly digests from RSS feeds (stateless, no database)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "feedparser>=6.0.11",
     "python-dateutil>=2.8.2",
-    "supabase>=2.3.3",
-    "postgrest>=0.13.2",
     "openai>=1.12.0",
     "sendgrid>=6.11.0",
     "python-dotenv>=1.0.1",
-    "requests>=2.31.0",
 ]
 
 [tool.hatch.build.targets.wheel]

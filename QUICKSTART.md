@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get your RSS digest running in 15 minutes!
+Get your RSS digest running in 10 minutes!
 
 ## 1. Install uv and Dependencies (2 min)
 
@@ -12,23 +12,27 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
-## 2. Set Up Supabase (5 min)
+## 2. Get API Keys (5 min)
 
-1. Go to [supabase.com](https://supabase.com) → Create new project
-2. Once ready, go to SQL Editor
-3. Copy and paste contents of `setup_database.sql`
-4. Click "Run"
-5. Go to Settings → API
-   - Copy your Project URL
-   - Copy your anon/public key
+### LLM Provider (Choose one)
 
-## 3. Get API Keys (5 min)
+**Option A: OpenAI**
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Sign up and add payment method
+3. Go to [API Keys](https://platform.openai.com/api-keys) → Create key
+4. Copy your API key
 
-### OpenRouter
+**Option B: DeepSeek (Recommended - Cost-effective)**
+1. Go to [platform.deepseek.com](https://platform.deepseek.com)
+2. Sign up
+3. Go to API Keys → Create key
+4. Copy your API key
+
+**Option C: OpenRouter (Access to multiple models)**
 1. Go to [openrouter.ai](https://openrouter.ai)
 2. Sign in with Google/GitHub
 3. Go to [Keys](https://openrouter.ai/keys) → Create key
-4. Add $5 credits (optional, but recommended)
+4. Copy your API key
 
 ### SendGrid
 1. Go to [sendgrid.com](https://sendgrid.com) → Sign up (free)
@@ -37,51 +41,89 @@ uv sync
 4. Choose "Full Access" → Copy key
 5. Settings → Sender Authentication → Verify your email
 
-## 4. Configure Environment (2 min)
+## 3. Configure Environment (2 min)
 
 ```bash
 cp .env.example .env
 nano .env  # or use your favorite editor
 ```
 
-Fill in:
+Fill in based on your chosen provider:
+
+**For OpenAI:**
 ```
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_KEY=eyJxxxx...
-OPENROUTER_API_KEY=sk-or-xxxx...
+OPENAI_API_KEY=sk-xxxx...
+OPENAI_BASE_URL=
+LLM_MODEL=gpt-4o-mini
 SENDGRID_API_KEY=SG.xxxx...
 RECIPIENT_EMAIL=your-email@example.com
+FROM_EMAIL=your-verified-sender@example.com
 ```
 
-## 5. Test It! (1 min)
+**For DeepSeek:**
+```
+OPENAI_API_KEY=sk-xxxx...
+OPENAI_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+SENDGRID_API_KEY=SG.xxxx...
+RECIPIENT_EMAIL=your-email@example.com
+FROM_EMAIL=your-verified-sender@example.com
+```
+
+**For OpenRouter:**
+```
+OPENAI_API_KEY=sk-or-xxxx...
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=google/gemini-flash-1.5-8b
+SENDGRID_API_KEY=SG.xxxx...
+RECIPIENT_EMAIL=your-email@example.com
+FROM_EMAIL=your-verified-sender@example.com
+```
+
+## 4. Test It! (1 min)
 
 ```bash
 uv run python src/main.py --test --dry-run
-# Or use: make test-run
 ```
 
 This will:
-- Fetch 5 articles
-- Process them with AI
+- Fetch 5 articles from RSS feeds
+- Generate digest with AI in a single call
 - Save digest as HTML (won't send email)
 
 Check the generated `digest_XXXXXX.html` file!
 
-## 6. Send Real Digest
+## 5. Send Real Digest
 
 ```bash
 uv run python src/main.py --test
-# Or use: make test-run
 ```
 
 Check your email! 📧
 
-## 7. Set Up GitHub Actions (Optional)
+## 6. Set Up Automation (Optional)
 
+### GitHub Actions
 1. Push to GitHub
 2. Go to Settings → Secrets and variables → Actions
-3. Add all 5 secrets from your `.env` file
-4. Done! Runs every Monday at 7 AM CET
+3. Add all secrets from your `.env` file:
+   - `OPENAI_API_KEY`
+   - `OPENAI_BASE_URL` (optional, only if using DeepSeek/OpenRouter)
+   - `LLM_MODEL`
+   - `SENDGRID_API_KEY`
+   - `RECIPIENT_EMAIL`
+   - `FROM_EMAIL`
+4. Edit `.github/workflows/weekly_digest.yml` to set your schedule
+5. Done!
+
+### Cron Job (Linux/macOS)
+```bash
+# Edit crontab
+crontab -e
+
+# Add line to run every Monday at 7 AM
+0 7 * * 1 cd /path/to/rss-digest && /path/to/.venv/bin/python src/main.py
+```
 
 ## Troubleshooting
 
@@ -93,17 +135,53 @@ uv run python src/main.py --days 14 --test  # Try longer date range
 **Email not sending?**
 - Check SendGrid dashboard for errors
 - Verify sender email is confirmed
-- Check `rss_digest.log`
+- Check `digest.log`
 
-**Database errors?**
-- Verify Supabase credentials
-- Make sure you ran `setup_database.sql`
+**LLM errors?**
+- Verify your LLM provider API key is correct
+- Check that OPENAI_BASE_URL is set correctly for your provider
+- Check account balance/credits
+- Review error messages in `digest.log`
 
 ## What's Next?
 
 - Read the full [README.md](README.md) for all options
-- Customize RSS feeds in `config/rss_feeds.py`
-- Adjust LLM prompts for your interests
-- Set up GitHub Actions for automation
+- Customize RSS feeds in `config/feeds.py`
+- Adjust LLM prompt for your interests in `config/feeds.py`
+- Modify email template in `templates/email_template.html`
+
+## How It Works
+
+The application is completely stateless:
+1. **Fetch**: Grabs articles from RSS feeds (last 7 days by default)
+2. **Analyze**: Sends all articles to LLM in one API call to generate comprehensive digest
+3. **Send**: Emails the digest via SendGrid
+
+No database, no storage, no complexity!
+
+## Command Line Options
+
+```bash
+# Basic usage
+uv run python src/main.py
+
+# Test with 5 articles
+uv run python src/main.py --test
+
+# Generate but don't send
+uv run python src/main.py --dry-run
+
+# Look back 14 days
+uv run python src/main.py --days 14
+
+# Verbose logging
+uv run python src/main.py --verbose
+
+# Don't save HTML file
+uv run python src/main.py --no-save
+
+# Combine options
+uv run python src/main.py --test --dry-run --verbose
+```
 
 Enjoy your automated RSS digest! 🎉

@@ -14,70 +14,65 @@ RSS_FEEDS = {
     "Data journalism" : "https://www.economist.com/graphic-detail/rss.xml"
 }
 
-# LLM Prompts - easily adjustable without changing core logic
-# Customize these prompts based on your interests and the type of content you're tracking
-ARTICLE_ANALYSIS_PROMPT = """Analyze this article headline and RSS snippet for a European data journalist interested in markets and policy.
+# LLM Prompt for digest generation
+# Customize this prompt based on your interests and the type of content you're tracking
+DIGEST_GENERATION_PROMPT = """You are creating a weekly digest for a European data journalist interested in markets and policy.
 
-Title: {title}
-Snippet: {rss_summary}
-Feed: {feed_category}
-Published: {published_date}
-
-Provide (in JSON format):
-{{
-  "summary": "2-3 sentence summary capturing the key point",
-  "category": "one of: European Politics, European Economy, Personal Finance, EU Policy, Global Context, Data Journalism",
-  "importance_score": 1-10 (how important/interesting for the target reader),
-  "key_entities": ["list", "of", "entities"],
-  "data_points": ["any", "numbers", "or", "data", "mentioned"],
-  "why_interesting": "One sentence on why this matters to a European data journalist"
-}}
-
-Respond ONLY with valid JSON, no additional text."""
-
-DIGEST_GENERATION_PROMPT = """Create a weekly digest for a European data journalist interested in markets and policy.
-
-ARTICLES THIS WEEK ({article_count} articles):
+ARTICLES FROM {date_range} ({article_count} articles):
 {article_list}
 
-Create a digest with these sections:
+TASK: Analyze these articles and create a comprehensive digest with the following sections:
 
 1. THIS WEEK'S BIG PICTURE
-   Write ONE paragraph in simple, clear language summarizing the main story or theme this week.
-   What's happening that matters most?
+   - Analyze all articles to identify the main story or theme this week
+   - Write ONE paragraph in simple, clear language
+   - Focus on what's happening that matters most
 
 2. TOP 3 ARTICLES TO READ
-   Pick the 3 most important articles this week.
-   For each:
-   - Title (as clickable link)
-   - 2-3 sentence summary in plain language
-   - Why it matters (1 sentence)
+   - Select the 3 most important/interesting articles based on:
+     * Relevance to European data journalists
+     * Impact on markets and policy
+     * Data journalism opportunities
+   - For each article provide:
+     * Title (as clickable link using the URL)
+     * 2-3 sentence summary in plain language
+     * Why it matters (1 sentence)
 
 3. WHAT'S HAPPENING
-   Choose ONE article for each of these themes (select DIFFERENT articles from those in TOP 3):
+   Choose ONE article for each theme below (select DIFFERENT articles from those in TOP 3):
 
    IN EUROPE:
-   - Article title (as link)
+   - Article title (as clickable link)
    - Simple 2-sentence summary
+   - Focus on European politics, economy, or EU policy
 
    INTERNATIONALLY:
-   - Article title (as link)
+   - Article title (as clickable link)
    - Simple 2-sentence summary
+   - Focus on global context relevant to Europe
 
    IN THE MARKETS:
-   - Article title (as link)
+   - Article title (as clickable link)
    - Simple 2-sentence summary
    - Include any ECB signals, European markets, or personal finance insights
 
 4. DATA JOURNALISM OPPORTUNITIES
-   - Specific story ideas with data angles
+   - Specific story ideas with data angles from the articles
    - Datasets or sources mentioned
    - Cross-country comparison opportunities
+   - Trends worth tracking
 
-IMPORTANT: Each article should appear only ONCE in the entire digest. Do not feature the same article in multiple sections.
+FORMATTING REQUIREMENTS:
+- Use simple, clear language throughout (write like you're explaining to someone who's half asleep)
+- Format as clean, semantic HTML:
+  * <h2> for main sections
+  * <h3> for subsections
+  * <p> for paragraphs
+  * <ul>/<li> for lists
+  * <a href="url"> for article links
+- Each article should appear only ONCE in the entire digest
+- Do NOT include introductory text like "Here is your weekly digest..."
+- Return ONLY the HTML content for the digest body (no html/head/body tags)
 
-Use simple, clear language throughout. Write like you're explaining to someone who's half asleep.
-Format in clean HTML (use <h2> for sections, <h3> for subsections, <p> for paragraphs, <ul>/<li> for lists, <a> for links).
-Do NOT include any introductory text like "Here is your weekly digest...".
-Return a html page
+Begin your analysis and digest creation now:
 """

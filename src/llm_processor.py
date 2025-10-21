@@ -1,113 +1,60 @@
 """
 LLM Processor Module
-Handles article analysis and digest generation using OpenRouter API.
+Handles digest generation directly from raw articles using OpenAI-compatible APIs.
 """
 
 import logging
-import json
 from typing import List, Dict, Optional
+from datetime import datetime
 from openai import OpenAI
+from openai import RateLimitError, APIError, APIConnectionError
 
 logger = logging.getLogger(__name__)
 
 
 class LLMProcessor:
-    """Processes articles using LLM via OpenRouter API."""
+    """Processes articles using LLM via OpenAI-compatible APIs."""
 
-    def __init__(self, api_key: str, model: Optional[str] = None):
+    def __init__(self, api_key: str, model: Optional[str] = None, base_url: Optional[str] = None):
         """
         Initialize LLM processor.
 
         Args:
-            api_key: OpenRouter API key
+            api_key: OpenAI-compatible API key
             model: Model to use (optional, will use LLM_MODEL env var or default)
+            base_url: Base URL for OpenAI-compatible API (optional, defaults to OpenAI API)
         """
         import os
         if model is None:
-            model = os.getenv("LLM_MODEL", "google/gemini-flash-1.5-8b")
-        self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key
-        )
+            model = os.getenv("LLM_MODEL")
+
+        # Only pass base_url if it's provided and not empty
+        if base_url:
+            self.client = OpenAI(
+                base_url=base_url,
+                api_key=api_key
+            )
+            logger.info(f"LLM Processor initialized with model: {model}, base_url: {base_url}")
+        else:
+            self.client = OpenAI(
+                api_key=api_key
+            )
+            logger.info(f"LLM Processor initialized with model: {model}")
+
         self.model = model
         self.total_tokens_used = 0
-        logger.info(f"LLM Processor initialized with model: {model}")
 
-    def analyze_article(self, article: Dict, prompt_template: str) -> Optional[Dict]:
-        """
-        Analyze a single article using LLM.
-
-        Args:
-            article: Article dictionary with title, summary, etc.
-            prompt_template: Prompt template with placeholders
-
-        Returns:
-            Dictionary with analysis results or None if failed
-        """
-        try:
-            # Format prompt with article data
-            prompt = prompt_template.format(
-                title=article.get('title', 'Unknown'),
-                rss_summary=article.get('rss_summary', 'No summary available'),
-                feed_category=article.get('feed_category', 'Unknown'),
-                published_date=article.get('published_date', 'Unknown')
-            )
-
-            logger.debug(f"Analyzing article: {article.get('title', 'Unknown')[:50]}...")
-
-            # Call LLM
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                temperature=0.3,  # Lower temperature for more consistent analysis
-                max_tokens=500  # Reasonable limit for article analysis
-            )
-
-            # Track token usage
-            if hasattr(response, 'usage'):
-                tokens = response.usage.total_tokens
-                self.total_tokens_used += tokens
-                logger.debug(f"Tokens used: {tokens}")
-
-            # Parse JSON response
-            content = response.choices[0].message.content.strip()
-
-            # Remove markdown code blocks if present
-            if content.startswith('```'):
-                content = content.split('```')[1]
-                if content.startswith('json'):
-                    content = content[4:]
-                content = content.strip()
-
-            analysis = json.loads(content)
-
-            logger.info(f"Successfully analyzed: {article.get('title', 'Unknown')[:50]}")
-            return analysis
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {str(e)}")
-            logger.error(f"Response content: {content if 'content' in locals() else 'N/A'}")
-            return None
-        except Exception as e:
-            logger.error(f"Error analyzing article: {str(e)}")
-            return None
-
-    def generate_digest(
+    def generate_digest_from_articles(
         self,
         articles: List[Dict],
         prompt_template: str,
         date_range: str
     ) -> Optional[str]:
         """
-        Generate weekly digest from analyzed articles.
+        Generate digest HTML directly from raw RSS articles in a single LLM call.
 
         Args:
-            articles: List of analyzed article dictionaries
+            articles: List of raw article dictionaries from RSS feeds
             prompt_template: Prompt template for digest generation
             date_range: String describing the date range (e.g., "Jan 15-21, 2025")
 
@@ -115,23 +62,21 @@ class LLMProcessor:
             HTML formatted digest or None if failed
         """
         try:
-            # Sort articles by importance score
-            sorted_articles = sorted(
-                articles,
-                key=lambda x: x.get('importance_score', 0),
-                reverse=True
-            )
+            if not articles:
+                logger.warning("No articles provided for digest generation")
+                return None
 
             # Format article list for prompt
-            article_list = self._format_articles_for_prompt(sorted_articles)
+            article_list = self._format_raw_articles_for_prompt(articles)
 
             # Format prompt
             prompt = prompt_template.format(
-                article_count=len(sorted_articles),
-                article_list=article_list
+                article_count=len(articles),
+                article_list=article_list,
+                date_range=date_range
             )
 
-            logger.info(f"Generating digest for {len(sorted_articles)} articles")
+            logger.info(f"Generating digest for {len(articles)} articles")
 
             # Call LLM with larger token limit for digest
             response = self.client.chat.completions.create(
@@ -139,15 +84,15 @@ class LLMProcessor:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a skilled editor creating weekly news digests for data journalists. Format your output in clean, semantic HTML."
+                        "content": "You are a skilled editor creating weekly news digests for data journalists. Analyze the provided articles and create a comprehensive digest in clean, semantic HTML."
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                temperature=0.5,  # Slightly higher for more creative synthesis
-                max_tokens=3000  # Larger limit for full digest
+                temperature=0.5,  # Balanced for analysis and creative synthesis
+                max_tokens=4000  # Larger limit for full digest with analysis
             )
 
             # Track token usage
@@ -161,16 +106,26 @@ class LLMProcessor:
             logger.info("Successfully generated digest")
             return digest_html
 
+        except RateLimitError as e:
+            logger.warning(f"Rate limit hit (429 Too Many Requests) during digest generation.")
+            logger.debug(f"Rate limit error details: {str(e)}")
+            return None
+        except APIConnectionError as e:
+            logger.error(f"API connection error during digest generation: {str(e)}")
+            return None
+        except APIError as e:
+            logger.error(f"API error during digest generation: {str(e)}")
+            return None
         except Exception as e:
             logger.error(f"Error generating digest: {str(e)}")
             return None
 
-    def _format_articles_for_prompt(self, articles: List[Dict]) -> str:
+    def _format_raw_articles_for_prompt(self, articles: List[Dict]) -> str:
         """
-        Format articles into a readable list for the LLM prompt.
+        Format raw RSS articles into a readable list for the LLM prompt.
 
         Args:
-            articles: List of article dictionaries
+            articles: List of raw article dictionaries from RSS feeds
 
         Returns:
             Formatted string with article details
@@ -178,17 +133,20 @@ class LLMProcessor:
         formatted = []
 
         for i, article in enumerate(articles, 1):
+            # Format published date
+            pub_date = article.get('published_date')
+            if isinstance(pub_date, datetime):
+                pub_date_str = pub_date.strftime('%Y-%m-%d')
+            else:
+                pub_date_str = str(pub_date) if pub_date else 'Unknown'
+
             article_text = f"""
 Article {i}:
 Title: {article.get('title', 'Unknown')}
 URL: {article.get('url', 'Unknown')}
 Feed: {article.get('feed_category', 'Unknown')}
-Published: {article.get('published_date', 'Unknown')}
-Summary: {article.get('llm_summary', article.get('rss_summary', 'No summary'))}
-Category: {article.get('llm_category', 'Unknown')}
-Importance Score: {article.get('importance_score', 'N/A')}/10
-Key Entities: {', '.join(article.get('key_entities', []))}
-Data Points: {', '.join(article.get('data_points', []))}
+Published: {pub_date_str}
+Summary: {article.get('rss_summary', 'No summary available')}
 """
             formatted.append(article_text.strip())
 
@@ -232,35 +190,50 @@ Data Points: {', '.join(article.get('data_points', []))}
         }
 
 
-def test_llm(api_key: str) -> None:
+def test_llm(api_key: str, base_url: Optional[str] = None) -> None:
     """
     Test LLM processor functionality.
 
     Args:
-        api_key: OpenRouter API key
+        api_key: OpenAI-compatible API key
+        base_url: Base URL for OpenAI-compatible API (optional)
     """
-    processor = LLMProcessor(api_key)
+    processor = LLMProcessor(api_key, base_url=base_url)
 
     print("\n=== LLM Processor Test ===")
     print(f"Using model: {processor.model}")
 
-    # Test article analysis
-    test_article = {
-        'title': 'Europe\'s economy faces headwinds from energy crisis',
-        'rss_summary': 'Rising energy costs and supply chain disruptions continue to challenge European economies, with Germany and France showing slowest growth in years.',
-        'feed_category': 'Europe',
-        'published_date': '2025-01-20'
-    }
+    # Test digest generation from raw articles
+    test_articles = [
+        {
+            'title': 'Europe\'s economy faces headwinds from energy crisis',
+            'rss_summary': 'Rising energy costs and supply chain disruptions continue to challenge European economies, with Germany and France showing slowest growth in years.',
+            'feed_category': 'Europe',
+            'published_date': datetime(2025, 1, 20),
+            'url': 'https://example.com/article1'
+        },
+        {
+            'title': 'ECB signals potential rate cuts',
+            'rss_summary': 'European Central Bank hints at easing monetary policy as inflation shows signs of cooling.',
+            'feed_category': 'Finance & Economics',
+            'published_date': datetime(2025, 1, 21),
+            'url': 'https://example.com/article2'
+        }
+    ]
 
-    from config.feeds import ARTICLE_ANALYSIS_PROMPT
+    from config.feeds import DIGEST_GENERATION_PROMPT
 
-    result = processor.analyze_article(test_article, ARTICLE_ANALYSIS_PROMPT)
+    result = processor.generate_digest_from_articles(
+        test_articles,
+        DIGEST_GENERATION_PROMPT,
+        "Jan 15-21, 2025"
+    )
 
     if result:
-        print("\nAnalysis Result:")
-        print(json.dumps(result, indent=2))
+        print("\nDigest Generated Successfully!")
+        print(f"Length: {len(result)} characters")
     else:
-        print("\nAnalysis failed")
+        print("\nDigest generation failed")
 
     # Print token usage
     usage = processor.get_token_usage_summary()
@@ -280,9 +253,10 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL")
 
     if api_key:
-        test_llm(api_key)
+        test_llm(api_key, base_url)
     else:
-        print("Please set OPENROUTER_API_KEY in .env file")
+        print("Please set OPENAI_API_KEY in .env file")
