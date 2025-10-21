@@ -1,0 +1,72 @@
+name: Weekly Economist Digest
+
+on:
+  # Run every Monday at 7:00 AM CET (5:00 AM UTC in winter, 6:00 AM UTC in summer)
+  # Using 5:00 AM UTC to be safe
+  schedule:
+    - cron: '0 5 * * 1'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Run in test mode (only 5 articles)'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run (generate but do not send email)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  generate-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run digest workflow
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: |
+          if [ "${{ github.event.inputs.test_mode }}" == "true" ]; then
+            uv run python src/main.py --test
+          elif [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            uv run python src/main.py --dry-run
+          else
+            uv run python src/main.py
+          fi
+
+      - name: Upload digest HTML artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-html-${{ github.run_number }}
+          path: |
+            digest_*.html
+            economist_digest.log
+          retention-days: 30
+
+      - name: Report status
+        if: failure()
+        run: |
+          echo "::error::Digest workflow failed. Check logs for details."
+          cat economist_digest.log || echo "Log file not found"
