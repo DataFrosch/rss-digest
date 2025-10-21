@@ -1,8 +1,9 @@
 """
-RSS feed configuration for The Economist.
+RSS feed configuration.
 Easy to modify without changing core code.
 """
 
+# Example feeds - replace with your own RSS feeds
 RSS_FEEDS = {
     "Finance & Economics": "https://www.economist.com/finance-and-economics/rss.xml",
     "Europe": "https://www.economist.com/europe/rss.xml",
@@ -14,7 +15,8 @@ RSS_FEEDS = {
 }
 
 # LLM Prompts - easily adjustable without changing core logic
-ARTICLE_ANALYSIS_PROMPT = """Analyze this Economist article headline and RSS snippet for a European data journalist interested in markets and policy.
+# Customize these prompts based on your interests and the type of content you're tracking
+ARTICLE_ANALYSIS_PROMPT = """Analyze this article headline and RSS snippet for a European data journalist interested in markets and policy.
 
 Title: {title}
 Snippet: {rss_summary}

@@ -16,7 +16,7 @@ from rss_fetcher import RSSFetcher
 from database import Database
 from llm_processor import LLMProcessor
 from email_sender import EmailSender
-from config.rss_feeds import RSS_FEEDS, ARTICLE_ANALYSIS_PROMPT, DIGEST_GENERATION_PROMPT
+from config.feeds import RSS_FEEDS, ARTICLE_ANALYSIS_PROMPT, DIGEST_GENERATION_PROMPT
 
 
 # Configure logging
@@ -28,7 +28,7 @@ def setup_logging(verbose: bool = False):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler('economist_digest.log')
+            logging.FileHandler('digest.log')
         ]
     )
 
@@ -45,6 +45,7 @@ class DigestOrchestrator:
         supabase_key: str,
         openrouter_api_key: str,
         sendgrid_api_key: str,
+        from_email: str,
         recipient_email: str
     ):
         """
@@ -55,12 +56,13 @@ class DigestOrchestrator:
             supabase_key: Supabase API key
             openrouter_api_key: OpenRouter API key
             sendgrid_api_key: SendGrid API key
+            from_email: Sender email address (must be verified in SendGrid)
             recipient_email: Email address to send digest to
         """
         self.rss_fetcher = RSSFetcher(RSS_FEEDS)
         self.database = Database(supabase_url, supabase_key)
         self.llm_processor = LLMProcessor(openrouter_api_key)
-        self.email_sender = EmailSender(sendgrid_api_key)
+        self.email_sender = EmailSender(sendgrid_api_key, from_email)
         self.recipient_email = recipient_email
 
         logger.info("Digest orchestrator initialized")
@@ -244,7 +246,7 @@ class DigestOrchestrator:
             dry_run: If True, generate but don't send email
         """
         logger.info("=" * 60)
-        logger.info("STARTING ECONOMIST DIGEST WORKFLOW")
+        logger.info("STARTING RSS DIGEST WORKFLOW")
         logger.info("=" * 60)
 
         limit = 5 if test_mode else None
@@ -292,7 +294,7 @@ class DigestOrchestrator:
 def main():
     """Main entry point with CLI argument parsing."""
     parser = argparse.ArgumentParser(
-        description="Economist Weekly Digest - Automated RSS monitoring and digest generation"
+        description="RSS Weekly Digest - Automated RSS monitoring and digest generation"
     )
 
     parser.add_argument(
@@ -352,6 +354,7 @@ def main():
         'SUPABASE_KEY',
         'OPENROUTER_API_KEY',
         'SENDGRID_API_KEY',
+        'FROM_EMAIL',
         'RECIPIENT_EMAIL'
     ]
 
@@ -368,6 +371,7 @@ def main():
         supabase_key=os.getenv('SUPABASE_KEY'),
         openrouter_api_key=os.getenv('OPENROUTER_API_KEY'),
         sendgrid_api_key=os.getenv('SENDGRID_API_KEY'),
+        from_email=os.getenv('FROM_EMAIL'),
         recipient_email=os.getenv('RECIPIENT_EMAIL')
     )
 

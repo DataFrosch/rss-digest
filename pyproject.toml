@@ -1,7 +1,7 @@
 [project]
-name = "economist-digest"
+name = "rss-digest"
 version = "0.1.0"
-description = "Automated system to fetch, analyze, and deliver weekly digests of The Economist articles"
+description = "Automated system to fetch, analyze, and deliver weekly digests from RSS feeds"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

@@ -1,3 +1,3 @@
 """
-Configuration module for Economist Digest.
+Configuration module for RSS Digest.
 """

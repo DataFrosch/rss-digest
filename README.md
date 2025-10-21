@@ -1,10 +1,10 @@
-# Economist Weekly Digest
+# RSS Weekly Digest
 
-Automated system to fetch, analyze, and deliver weekly digests of The Economist articles tailored for European data journalists interested in markets, policy, and data-driven stories.
+Automated system to fetch, analyze, and deliver weekly digests from RSS feeds. Powered by AI to summarize and categorize articles based on your interests.
 
 ## Features
 
-- 📰 **Automated RSS Monitoring**: Fetches articles from 6+ Economist RSS feeds
+- 📰 **Automated RSS Monitoring**: Fetches articles from any RSS feeds you configure
 - 🤖 **AI-Powered Analysis**: Uses LLM (via OpenRouter) to summarize and categorize articles
 - 📊 **Smart Prioritization**: Rates articles by importance (1-10) and extracts key entities/data points
 - 📧 **Email Delivery**: Beautiful HTML digest sent via SendGrid
@@ -17,7 +17,7 @@ Automated system to fetch, analyze, and deliver weekly digests of The Economist 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
 │ RSS Feeds   │───▶│  Supabase    │───▶│  OpenRouter │
-│ (Economist) │    │  (Database)  │    │  (LLM API)  │
+│ (Any Source)│    │  (Database)  │    │  (LLM API)  │
 └─────────────┘    └──────────────┘    └─────────────┘
                            │                    │
                            ▼                    ▼
@@ -39,7 +39,7 @@ Automated system to fetch, analyze, and deliver weekly digests of The Economist 
 ## Project Structure
 
 ```
-economist-digest/
+rss-digest/
 ├── .github/
 │   └── workflows/
 │       └── weekly_digest.yml       # GitHub Actions workflow
@@ -51,7 +51,7 @@ economist-digest/
 │   ├── email_sender.py             # SendGrid email sending
 │   └── main.py                     # Main orchestration script
 ├── config/
-│   └── rss_feeds.py                # RSS feeds and LLM prompts
+│   └── feeds.py                    # RSS feeds and LLM prompts
 ├── templates/
 │   └── email_template.html         # Email HTML template
 ├── .env.example                    # Environment variables template
@@ -76,7 +76,7 @@ economist-digest/
 
 ```bash
 git clone <your-repo-url>
-cd economist-digest
+cd rss-digest
 ```
 
 ### 2. Install uv (if not already installed)
@@ -151,7 +151,8 @@ uv sync
 
 3. **Verify Sender Email**
    - Go to Settings → Sender Authentication
-   - Verify a single sender email (your email)
+   - Verify a single sender email address
+   - This will be your `FROM_EMAIL` in the `.env` file
    - Or verify a domain if you have one
 
 ### 7. Configure Environment Variables
@@ -168,6 +169,7 @@ uv sync
    OPENROUTER_API_KEY=your-openrouter-key
    SENDGRID_API_KEY=your-sendgrid-key
    RECIPIENT_EMAIL=your-email@example.com
+   FROM_EMAIL=your-verified-sender@example.com
    ```
 
 ### 8. Set Up GitHub Actions
@@ -176,7 +178,7 @@ uv sync
    ```bash
    git init
    git add .
-   git commit -m "Initial commit: Economist digest system"
+   git commit -m "Initial commit: RSS digest system"
    git branch -M main
    git remote add origin <your-github-repo-url>
    git push -u origin main
@@ -191,6 +193,7 @@ uv sync
      - `OPENROUTER_API_KEY`
      - `SENDGRID_API_KEY`
      - `RECIPIENT_EMAIL`
+     - `FROM_EMAIL`
 
 3. **Enable GitHub Actions**
    - Go to Actions tab
@@ -278,7 +281,7 @@ uv run python src/email_sender.py
 ### Manual GitHub Actions Trigger
 
 1. Go to Actions tab in your GitHub repository
-2. Click "Weekly Economist Digest"
+2. Click "Weekly RSS Digest"
 3. Click "Run workflow"
 4. Choose options:
    - Test mode: Yes/No
@@ -289,18 +292,19 @@ uv run python src/email_sender.py
 
 ### Change RSS Feeds
 
-Edit `config/rss_feeds.py`:
+Edit `config/feeds.py`:
 
 ```python
 RSS_FEEDS = {
-    "Your Category": "https://www.economist.com/your-feed/rss.xml",
+    "Your Category": "https://example.com/your-feed/rss.xml",
     # Add or remove feeds as needed
+    # Works with any RSS feed from any source
 }
 ```
 
 ### Modify LLM Prompts
 
-Edit prompts in `config/rss_feeds.py`:
+Edit prompts in `config/feeds.py` to customize for your interests:
 
 ```python
 ARTICLE_ANALYSIS_PROMPT = """Your custom prompt here..."""
@@ -349,7 +353,7 @@ Edit `templates/email_template.html` to change the look and feel of your digest 
 - Verify SendGrid API key is correct
 - Check sender email is verified in SendGrid
 - Check SendGrid dashboard for error messages
-- Look at `economist_digest.log` for details
+- Look at `digest.log` for details
 
 ### "Database connection failed"
 
@@ -378,7 +382,7 @@ Edit `templates/email_template.html` to change the look and feel of your digest 
 
 ## Logs and Debugging
 
-- **Log file**: `economist_digest.log` (created in working directory)
+- **Log file**: `digest.log` (created in working directory)
 - **Verbose mode**: Use `--verbose` flag for detailed logging
 - **GitHub Actions logs**: Available in Actions tab for 30 days
 - **Digest HTML backups**: Saved as `digest_YYYYMMDD_HHMMSS.html`
@@ -435,23 +439,26 @@ LLM Usage This Run:
   Estimated cost: $0.0178
 ```
 
-## RSS Feeds Currently Monitored
+## Example Configuration
 
-1. Finance & Economics
-2. Europe
-3. Business
-4. Britain
-5. International
-6. Science & Technology
+The repository includes example RSS feed configurations that you can replace with any RSS feeds you want to monitor. Common use cases:
+
+- News websites (NYTimes, BBC, Reuters, etc.)
+- Blogs and personal websites
+- Podcasts with RSS feeds
+- YouTube channels (via RSS)
+- Reddit subreddits (via RSS)
+- GitHub releases and activity
+- Any other content with RSS/Atom feeds
 
 ## Email Digest Structure
 
+The digest structure is customizable via the prompts in `config/feeds.py`. The default template includes:
+
 1. **This Week's Big Picture**: Thematic overview
-2. **Top 10 Articles to Read**: Most important articles
+2. **Top Articles to Read**: Most important articles
 3. **Articles by Theme**: Grouped by topic
-4. **Cross-Cutting Patterns**: Connections across stories
-5. **Data Journalism Opportunities**: Story ideas with data angles
-6. **Market & Portfolio Watch**: Financial insights and signals
+4. **Additional Sections**: Customize based on your needs
 
 ## Security Notes
 
@@ -473,7 +480,7 @@ MIT License - feel free to use and modify as needed.
 
 For issues:
 1. Check the troubleshooting section above
-2. Review logs in `economist_digest.log`
+2. Review logs in `digest.log`
 3. Check GitHub Actions logs if using automation
 4. Review Supabase logs in dashboard
 5. Open a GitHub issue with details
@@ -491,4 +498,4 @@ For issues:
 
 ---
 
-Built with ❤️ for data journalists who love The Economist
+Built with ❤️ for anyone who wants automated, AI-powered content digests

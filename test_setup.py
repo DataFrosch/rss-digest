@@ -183,7 +183,7 @@ def test_rss_feeds():
     try:
         sys.path.insert(0, 'src')
         from rss_fetcher import RSSFetcher
-        from config.rss_feeds import RSS_FEEDS
+        from config.feeds import RSS_FEEDS
 
         fetcher = RSSFetcher(RSS_FEEDS)
         articles = fetcher.fetch_recent_articles(days=7)
@@ -203,7 +203,7 @@ def test_rss_feeds():
 def main():
     """Run all tests."""
     print("\n" + "="*60)
-    print("ECONOMIST DIGEST - SETUP VERIFICATION")
+    print("RSS DIGEST - SETUP VERIFICATION")
     print("="*60)
 
     # Track results

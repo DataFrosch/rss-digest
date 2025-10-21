@@ -252,7 +252,7 @@ def test_llm(api_key: str) -> None:
         'published_date': '2025-01-20'
     }
 
-    from config.rss_feeds import ARTICLE_ANALYSIS_PROMPT
+    from config.feeds import ARTICLE_ANALYSIS_PROMPT
 
     result = processor.analyze_article(test_article, ARTICLE_ANALYSIS_PROMPT)
 

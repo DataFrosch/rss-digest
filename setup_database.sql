@@ -1,4 +1,4 @@
--- Supabase Database Setup Script for Economist Digest
+-- Supabase Database Setup Script for RSS Digest
 -- Run this in your Supabase SQL Editor to create the necessary tables
 
 -- Create articles table
@@ -100,7 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_errors_occurred_at ON digest_errors(occurred_at D
 -- These are here for reference/manual setups
 
 -- Comment explaining the schema
-COMMENT ON TABLE articles IS 'Stores articles fetched from Economist RSS feeds with LLM analysis';
+COMMENT ON TABLE articles IS 'Stores articles fetched from RSS feeds with LLM analysis';
 COMMENT ON COLUMN articles.url IS 'Unique URL of the article (used for deduplication)';
 COMMENT ON COLUMN articles.rss_summary IS 'Summary text from the RSS feed';
 COMMENT ON COLUMN articles.llm_summary IS 'AI-generated summary from LLM analysis';

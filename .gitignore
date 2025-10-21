@@ -46,7 +46,7 @@ venv.bak/
 
 # Logs
 *.log
-economist_digest.log
+rss_digest.log
 
 # Generated Digest Files
 digest_*.html

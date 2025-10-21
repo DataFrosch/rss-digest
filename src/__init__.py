@@ -1,5 +1,5 @@
 """
-Economist Weekly Digest System
+RSS Weekly Digest System
 Automated RSS monitoring, LLM analysis, and email digest generation.
 """
 

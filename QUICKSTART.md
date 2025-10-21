@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get your Economist digest running in 15 minutes!
+Get your RSS digest running in 15 minutes!
 
 ## 1. Install uv and Dependencies (2 min)
 
@@ -93,7 +93,7 @@ uv run python src/main.py --days 14 --test  # Try longer date range
 **Email not sending?**
 - Check SendGrid dashboard for errors
 - Verify sender email is confirmed
-- Check `economist_digest.log`
+- Check `rss_digest.log`
 
 **Database errors?**
 - Verify Supabase credentials
@@ -106,4 +106,4 @@ uv run python src/main.py --days 14 --test  # Try longer date range
 - Adjust LLM prompts for your interests
 - Set up GitHub Actions for automation
 
-Enjoy your automated Economist digest! 🎉
+Enjoy your automated RSS digest! 🎉

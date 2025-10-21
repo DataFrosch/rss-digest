@@ -1,6 +1,6 @@
 """
 RSS Feed Fetcher
-Retrieves articles from Economist RSS feeds and parses them.
+Retrieves articles from RSS feeds and parses them.
 """
 
 import logging
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class RSSFetcher:
-    """Fetches and parses RSS feeds from The Economist."""
+    """Fetches and parses RSS feeds."""
 
     def __init__(self, feeds: Dict[str, str]):
         """
@@ -155,7 +155,7 @@ def test_feeds(feeds: Dict[str, str], days: int = 7) -> None:
 
 if __name__ == "__main__":
     # Test the RSS fetcher
-    from config.rss_feeds import RSS_FEEDS
+    from config.feeds import RSS_FEEDS
 
     logging.basicConfig(
         level=logging.INFO,

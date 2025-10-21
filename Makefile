@@ -2,7 +2,7 @@
 
 # Default target
 help:
-	@echo "Economist Weekly Digest - Available Commands"
+	@echo "RSS Weekly Digest - Available Commands"
 	@echo "============================================="
 	@echo ""
 	@echo "Setup Commands:"
@@ -71,12 +71,12 @@ clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -delete
 	find . -type f -name "digest_*.html" -delete
-	rm -f src/economist_digest.log
+	rm -f src/rss_digest.log
 	@echo "Cleaned generated files and caches"
 
 logs:
-	@if [ -f src/economist_digest.log ]; then \
-		tail -50 src/economist_digest.log; \
+	@if [ -f src/rss_digest.log ]; then \
+		tail -50 src/rss_digest.log; \
 	else \
 		echo "No log file found"; \
 	fi

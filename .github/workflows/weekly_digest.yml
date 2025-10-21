@@ -1,4 +1,4 @@
-name: Weekly Economist Digest
+name: Weekly RSS Digest
 
 on:
   # Run every Monday at 7:00 AM CET (5:00 AM UTC in winter, 6:00 AM UTC in summer)
@@ -45,6 +45,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: |
           if [ "${{ github.event.inputs.test_mode }}" == "true" ]; then
@@ -62,11 +63,11 @@ jobs:
           name: digest-html-${{ github.run_number }}
           path: |
             digest_*.html
-            economist_digest.log
+            rss_digest.log
           retention-days: 30
 
       - name: Report status
         if: failure()
         run: |
           echo "::error::Digest workflow failed. Check logs for details."
-          cat economist_digest.log || echo "Log file not found"
+          cat rss_digest.log || echo "Log file not found"

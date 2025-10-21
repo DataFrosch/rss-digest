@@ -1,10 +1,10 @@
-# Economist Weekly Digest - Project Summary
+# RSS Weekly Digest - Project Summary
 
 ## Overview
 
-A complete, production-ready automated system for monitoring The Economist RSS feeds, analyzing articles with AI, and delivering personalized weekly digests via email.
+A complete, production-ready automated system for monitoring RSS feeds, analyzing articles with AI, and delivering personalized weekly digests via email.
 
-**Built for**: European data journalists interested in markets, policy, and data-driven stories
+**Built for**: Data journalists and professionals interested in automated content curation
 **Total Lines of Code**: ~1,500 lines of Python
 **Estimated Setup Time**: 15 minutes
 **Estimated Running Cost**: ~$1-2/year
@@ -21,7 +21,7 @@ A complete, production-ready automated system for monitoring The Economist RSS f
    - Statistics tracking
 
 2. **`src/rss_fetcher.py`** (165 lines)
-   - Fetches articles from 6 RSS feeds
+   - Fetches articles from configured RSS feeds
    - Date-based filtering
    - Robust error handling per feed
    - Graceful degradation if feeds fail
@@ -93,7 +93,7 @@ A complete, production-ready automated system for monitoring The Economist RSS f
 12. **`templates/email_template.html`**
     - Professional, clean design
     - Mobile-responsive
-    - Economist brand colors
+    - Customizable styling
     - Semantic HTML
     - Inline CSS for email compatibility
 
@@ -128,7 +128,7 @@ A complete, production-ready automated system for monitoring The Economist RSS f
 ## Features Implemented
 
 ### Core Features
-- ✅ RSS feed monitoring (6 feeds)
+- ✅ RSS feed monitoring (configurable feeds)
 - ✅ Supabase database storage
 - ✅ LLM-powered article analysis
 - ✅ Article importance scoring (1-10)
@@ -240,7 +240,7 @@ make dry-run                # Full workflow without email
 
 ## File Structure
 ```
-economist-digest/
+rss-digest/
 ├── .github/workflows/       # GitHub Actions
 ├── config/                  # Configuration & prompts
 ├── src/                     # Core application modules
@@ -346,7 +346,7 @@ The system is designed to be easily extensible:
 ## Support & Maintenance
 
 ### Logs
-- `economist_digest.log` - Local runs
+- `rss_digest.log` - Local runs
 - GitHub Actions logs - Automated runs
 - Supabase logs - Database queries
 
