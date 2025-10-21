@@ -9,10 +9,10 @@ Automated system to fetch, analyze, and deliver weekly digests from RSS feeds. P
 - 📰 **Automated RSS Monitoring**: Fetches articles from any RSS feeds you configure
 - 🤖 **AI-Powered Analysis**: Uses LLM (via OpenRouter) to summarize and categorize articles
 - 📊 **Smart Prioritization**: Rates articles by importance (1-10) and extracts key entities/data points
-- 📧 **Email Delivery**: Beautiful HTML digest sent via SendGrid
+- 📧 **Email Delivery**: HTML digest sent via SendGrid
 - ⚡ **Automated Scheduling**: Runs every Monday at 7 AM CET via GitHub Actions
 - 💾 **Database Storage**: Persistent storage in Supabase (PostgreSQL)
-- 💰 **Cost-Optimized**: Uses Gemini Flash 1.5 for minimal API costs
+- 💰 **Cost-Optimized**: Sacrifices privacy to use free models from [openrouter.ai](https://openrouter.ai/) (you can also use paid models and not sacrifice anything)
 
 ## Architecture
 
@@ -193,6 +193,7 @@ uv sync
      - `SUPABASE_URL`
      - `SUPABASE_KEY`
      - `OPENROUTER_API_KEY`
+     - `LLM_MODEL`
      - `SENDGRID_API_KEY`
      - `RECIPIENT_EMAIL`
      - `FROM_EMAIL`
@@ -209,75 +210,36 @@ uv sync
 #### Full Workflow
 ```bash
 uv run python src/main.py
-# Or using make:
-make run
 ```
 
 #### Test Mode (5 articles only)
 ```bash
 uv run python src/main.py --test
-# Or using make:
-make test-run
 ```
 
 #### Dry Run (generate but don't send email)
 ```bash
 uv run python src/main.py --dry-run
-# Or using make:
-make dry-run
 ```
 
 #### Fetch Only
 ```bash
 uv run python src/main.py --fetch-only
-# Or using make:
-make fetch
 ```
 
 #### Process Only (analyze unprocessed articles)
 ```bash
 uv run python src/main.py --process-only
-# Or using make:
-make process
 ```
 
 #### Send Only (generate digest from processed articles)
 ```bash
 uv run python src/main.py --send-only
-# Or using make:
-make send
-```
-
-#### Verbose Logging
-```bash
-uv run python src/main.py --verbose
 ```
 
 #### Custom Date Range
 ```bash
 uv run python src/main.py --days 14  # Last 14 days
-```
-
-### Test Individual Modules
-
-#### Test RSS Fetcher
-```bash
-uv run python src/rss_fetcher.py
-```
-
-#### Test Database Connection
-```bash
-uv run python src/database.py
-```
-
-#### Test LLM Processor
-```bash
-uv run python src/llm_processor.py
-```
-
-#### Test Email Sender
-```bash
-uv run python src/email_sender.py
 ```
 
 ### Manual GitHub Actions Trigger
@@ -313,13 +275,7 @@ ARTICLE_ANALYSIS_PROMPT = """Your custom prompt here..."""
 DIGEST_GENERATION_PROMPT = """Your custom digest prompt..."""
 ```
 
-### Change LLM Model
-
-Edit `src/llm_processor.py` or pass in constructor:
-
-```python
-processor = LLMProcessor(api_key, model="anthropic/claude-3-haiku")
-```
+### LLM Model
 
 Available models: [OpenRouter Models](https://openrouter.ai/docs#models)
 
@@ -327,177 +283,10 @@ Available models: [OpenRouter Models](https://openrouter.ai/docs#models)
 
 Edit `templates/email_template.html` to change the look and feel of your digest emails.
 
-## Cost Estimation
-
-### Weekly Costs (approximate)
-
-- **Supabase**: Free tier (500 MB database, plenty for this use)
-- **OpenRouter** (Gemini Flash 1.5):
-  - ~50 articles/week × 1000 tokens = 50K tokens
-  - Input: $0.075 per 1M tokens = ~$0.004
-  - Output: $0.30 per 1M tokens = ~$0.015
-  - **Total: ~$0.02/week** or **$1/year**
-- **SendGrid**: Free tier (100 emails/day, we send 1/week)
-- **GitHub Actions**: Free for public repos, 2000 min/month for private
-
-**Total estimated cost: ~$1-2/year** 🎉
-
-## Troubleshooting
-
-### "No articles to process"
-
-- Check if RSS feeds are accessible
-- Verify date range (try `--days 14`)
-- Check `articles` table in Supabase
-
-### "Failed to send email"
-
-- Verify SendGrid API key is correct
-- Check sender email is verified in SendGrid
-- Check SendGrid dashboard for error messages
-- Look at `digest.log` for details
-
-### "Database connection failed"
-
-- Verify Supabase URL and key are correct
-- Check if Supabase project is active
-- Verify `articles` table exists
-
-### "LLM API error"
-
-- Check OpenRouter API key is valid
-- Verify you have credits in OpenRouter account
-- Try a different model if rate limited
-
-### GitHub Actions not running
-
-- Check if secrets are properly set
-- Verify workflow file syntax
-- Check Actions tab for error messages
-- Ensure repository has Actions enabled
-
-### Import errors when running locally
-
-- Run `uv sync` to ensure all dependencies are installed
-- Check Python version is 3.13+ with `uv python list`
-- Try `uv sync --reinstall` to reinstall dependencies
-
-## Logs and Debugging
-
-- **Log file**: `digest.log` (created in working directory)
-- **Verbose mode**: Use `--verbose` flag for detailed logging
-- **GitHub Actions logs**: Available in Actions tab for 30 days
-- **Digest HTML backups**: Saved as `digest_YYYYMMDD_HHMMSS.html`
-
-## Database Queries
-
-### View Statistics
-```sql
-SELECT * FROM digest_stats;
-```
-
-### View Recent Articles
-```sql
-SELECT title, feed_category, importance_score, published_date
-FROM articles
-ORDER BY published_date DESC
-LIMIT 10;
-```
-
-### View Past Digests
-```sql
-SELECT * FROM weekly_digest_summary
-ORDER BY digest_date DESC;
-```
-
-### Articles Not Yet Sent
-```sql
-SELECT COUNT(*) as pending_articles
-FROM articles
-WHERE processed = TRUE
-AND included_in_email_date IS NULL;
-```
-
-## Advanced Features
-
-### Save Digest as Markdown
-
-The system saves HTML by default. To also save as Markdown, you can extend the `email_sender.py` module.
-
-### Re-process Specific Week
-
-```bash
-# Mark articles as not sent
-# Then run send-only
-uv run python src/main.py --send-only
-```
-
-### View Token Usage Statistics
-
-After running, check the logs for token usage:
-```
-LLM Usage This Run:
-  Total tokens: 45234
-  Estimated cost: $0.0178
-```
-
-## Example Configuration
-
-The repository includes example RSS feed configurations that you can replace with any RSS feeds you want to monitor. Common use cases:
-
-- News websites (NYTimes, BBC, Reuters, etc.)
-- Blogs and personal websites
-- Podcasts with RSS feeds
-- YouTube channels (via RSS)
-- Reddit subreddits (via RSS)
-- GitHub releases and activity
-- Any other content with RSS/Atom feeds
-
-## Email Digest Structure
-
-The digest structure is customizable via the prompts in `config/feeds.py`. The default template includes:
-
-1. **This Week's Big Picture**: Thematic overview
-2. **Top Articles to Read**: Most important articles
-3. **Articles by Theme**: Grouped by topic
-4. **Additional Sections**: Customize based on your needs
-
-## Security Notes
-
-- Never commit `.env` file to git
-- Keep API keys secure
-- Use GitHub Secrets for credentials
-- Rotate API keys periodically
-- Use Supabase Row Level Security (RLS) if needed
-
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
 
 ## License
 
-MIT License - feel free to use and modify as needed.
-
-## Support
-
-For issues:
-1. Check the troubleshooting section above
-2. Review logs in `digest.log`
-3. Check GitHub Actions logs if using automation
-4. Review Supabase logs in dashboard
-5. Open a GitHub issue with details
-
-## Roadmap / Future Enhancements
-
-- [ ] Web dashboard to view past digests
-- [ ] Multiple recipient support
-- [ ] Slack/Discord integration
-- [ ] Custom article filtering rules
-- [ ] A/B testing for LLM prompts
-- [ ] Export digests as Markdown or PDF
-- [ ] Sentiment analysis on articles
-- [ ] Topic trend tracking over time
-
----
-
-Built with ❤️ for anyone who wants automated, AI-powered content digests
+MIT License - feel free to use and modify
