@@ -1,4 +1,4 @@
-![](img/robot_writing.png)
+![](img/robot_writing.jpg)
 
 # RSS Weekly Digest
 
