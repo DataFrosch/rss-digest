@@ -122,7 +122,7 @@ class RSSFetcher:
         # Try parsed date fields
         if hasattr(entry, 'published_parsed') and entry.published_parsed:
             try:
-                return datetime(*entry.published_parsed[:6])
+                return datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
             except Exception:
                 pass
 

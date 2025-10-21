@@ -126,7 +126,7 @@ class DigestOrchestrator:
 
             # Log token usage
             usage = self.llm_processor.get_token_usage_summary()
-            logger.info(f"Token usage: {usage['total_tokens']} tokens, estimated cost: ${usage['estimated_cost_usd']}")
+            logger.info(f"Token usage: {usage['total_tokens']} tokens")
 
             # Step 3: Save HTML if requested
             if save_html:
@@ -135,7 +135,7 @@ class DigestOrchestrator:
                 self.email_sender.save_digest_html(digest_html, date_range, filepath)
                 logger.info(f"✓ Digest saved to {filepath}")
 
-            # Step 4: Send email (unless dry run)
+            # Step 3: Send email (unless dry run)
             if not dry_run:
                 logger.info("\n[STEP 3] Sending digest email")
                 success = self.email_sender.send_digest(
@@ -155,7 +155,6 @@ class DigestOrchestrator:
                     logger.info(f"  Articles processed: {len(articles)}")
                     logger.info(f"  Date range: {date_range}")
                     logger.info(f"  Total tokens: {usage['total_tokens']}")
-                    logger.info(f"  Estimated cost: ${usage['estimated_cost_usd']}")
                     return True
                 else:
                     logger.error("Failed to send digest email")
@@ -170,7 +169,6 @@ class DigestOrchestrator:
                 logger.info(f"  Articles processed: {len(articles)}")
                 logger.info(f"  Date range: {date_range}")
                 logger.info(f"  Total tokens: {usage['total_tokens']}")
-                logger.info(f"  Estimated cost: ${usage['estimated_cost_usd']}")
                 return True
 
         except Exception as e:
@@ -226,6 +224,7 @@ def main():
     # Check required environment variables
     required_vars = [
         'OPENAI_API_KEY',
+        'LLM_MODEL',
         'SENDGRID_API_KEY',
         'FROM_EMAIL',
         'RECIPIENT_EMAIL'

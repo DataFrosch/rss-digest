@@ -48,71 +48,21 @@ uv run python src/main.py
 
 ### 1. Get API Keys
 
-You'll need two accounts:
+**LLM Provider** - Choose one:
+- **OpenAI**: [platform.openai.com](https://platform.openai.com) → API Keys → Leave `OPENAI_BASE_URL` empty
+- **DeepSeek** (recommended): [platform.deepseek.com](https://platform.deepseek.com) → Set `OPENAI_BASE_URL=https://api.deepseek.com`
+- **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys) → Set `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
 
-**LLM API** (Choose one provider)
-
-Option A: **OpenAI**
-- Sign up at [platform.openai.com](https://platform.openai.com)
-- Go to [API Keys](https://platform.openai.com/api-keys) and create a key
-- Copy your API key (will be `OPENAI_API_KEY`)
-- Leave `OPENAI_BASE_URL` empty in your `.env`
-
-Option B: **DeepSeek** (Cost-effective)
-- Sign up at [platform.deepseek.com](https://platform.deepseek.com)
-- Go to API Keys and create a key
-- Copy your API key (will be `OPENAI_API_KEY`)
-- Set `OPENAI_BASE_URL=https://api.deepseek.com` in your `.env`
-
-Option C: **OpenRouter** (Access to multiple models)
-- Sign up at [openrouter.ai](https://openrouter.ai)
-- Go to [Keys](https://openrouter.ai/keys) and create an API key
-- Copy your API key (will be `OPENAI_API_KEY`)
-- Set `OPENAI_BASE_URL=https://openrouter.ai/api/v1` in your `.env`
-
-**SendGrid** (Email)
+**SendGrid** (Email):
 - Sign up at [sendgrid.com](https://sendgrid.com) (free tier: 100 emails/day)
-- Go to Settings → API Keys → Create API Key
-- Choose "Mail Send" permissions and copy your `SENDGRID_API_KEY`
-- Go to Settings → Sender Authentication
-- Verify your sender email address (this becomes `FROM_EMAIL`)
+- Settings → API Keys → Create API Key
+- Settings → Sender Authentication → Verify your email
 
 ### 2. Configure Environment
 
 ```bash
 cp .env.example .env
-```
-
-Edit `.env` based on your chosen provider:
-
-**For OpenAI:**
-```bash
-OPENAI_API_KEY=sk-xxx...
-OPENAI_BASE_URL=
-LLM_MODEL=gpt-4o-mini
-SENDGRID_API_KEY=SG.xxx...
-RECIPIENT_EMAIL=you@example.com
-FROM_EMAIL=verified-sender@example.com
-```
-
-**For DeepSeek:**
-```bash
-OPENAI_API_KEY=sk-xxx...
-OPENAI_BASE_URL=https://api.deepseek.com
-LLM_MODEL=deepseek-chat
-SENDGRID_API_KEY=SG.xxx...
-RECIPIENT_EMAIL=you@example.com
-FROM_EMAIL=verified-sender@example.com
-```
-
-**For OpenRouter:**
-```bash
-OPENAI_API_KEY=sk-or-v1-xxx...
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=google/gemini-flash-1.5-8b
-SENDGRID_API_KEY=SG.xxx...
-RECIPIENT_EMAIL=you@example.com
-FROM_EMAIL=verified-sender@example.com
+# Edit .env with your keys - see .env.example for provider-specific examples
 ```
 
 ### 3. Customize Feeds (Optional)
@@ -130,119 +80,30 @@ You can also customize the LLM prompt in the same file.
 
 ## Usage
 
-### Basic Commands
-
 ```bash
-# Full digest (fetch, generate, send)
+# Full digest
 uv run python src/main.py
 
-# Test with 5 articles only
-uv run python src/main.py --test
-
-# Generate but don't send email
-uv run python src/main.py --dry-run
-
-# Custom date range (last 14 days)
-uv run python src/main.py --days 14
-
-# Verbose logging
-uv run python src/main.py --verbose
-
-# Don't save HTML file locally
-uv run python src/main.py --no-save
+# Options:
+#   --test        Process only 5 articles
+#   --dry-run     Generate but don't send email
+#   --days N      Look back N days (default: 7)
+#   --verbose     Detailed logging
+#   --no-save     Don't save HTML file locally
 ```
-
-### Command Options
-
-- `--test`: Process only 5 articles (for testing)
-- `--dry-run`: Generate digest but don't send email
-- `--days N`: Look back N days for articles (default: 7)
-- `--verbose`: Enable detailed logging
-- `--no-save`: Don't save digest HTML file locally
 
 ## Automation
 
-### GitHub Actions
+**GitHub Actions**: Settings → Secrets → Add: `OPENAI_API_KEY`, `OPENAI_BASE_URL` (if needed), `LLM_MODEL`, `SENDGRID_API_KEY`, `FROM_EMAIL`, `RECIPIENT_EMAIL`
 
-The repository includes a workflow file (`.github/workflows/weekly_digest.yml`) for automated weekly runs.
-
-**Setup:**
-1. Push to GitHub
-2. Go to Settings → Secrets and variables → Actions
-3. Add these secrets:
-   - `OPENAI_API_KEY` (your LLM provider API key)
-   - `OPENAI_BASE_URL` (optional, only if using DeepSeek/OpenRouter)
-   - `LLM_MODEL`
-   - `SENDGRID_API_KEY`
-   - `RECIPIENT_EMAIL`
-   - `FROM_EMAIL`
-4. Enable GitHub Actions in the Actions tab
-
-**Manual trigger:**
-- Actions tab → "Weekly RSS Digest" → Run workflow
-
-### Cron Job
-
-Add to your crontab for weekly runs:
-```bash
-# Run every Monday at 9 AM
-0 9 * * 1 cd /path/to/rss-digest && /path/to/uv run python src/main.py
-```
+**Cron**: `0 9 * * 1 cd /path/to/rss-digest && uv run python src/main.py`
 
 ## Customization
 
-### RSS Feeds
-
-Edit `config/feeds.py` to change your feeds:
-
-```python
-RSS_FEEDS = {
-    "Tech": "https://example.com/tech.xml",
-    "News": "https://example.com/news.xml",
-}
-```
-
-### LLM Prompt
-
-Customize the digest format in `config/feeds.py`:
-
-```python
-DIGEST_GENERATION_PROMPT = """Create a digest with these sections:
-1. Summary
-2. Top stories
-3. Key insights
-..."""
-```
-
-The prompt controls the structure, tone, and analysis of your digest.
-
-### LLM Model
-
-Change model in `.env` based on your provider:
-
-**OpenAI models** (no OPENAI_BASE_URL):
-```bash
-LLM_MODEL=gpt-4o-mini        # Balanced quality and cost
-# LLM_MODEL=gpt-4o           # High quality
-# LLM_MODEL=gpt-3.5-turbo    # Fast and cheap
-```
-
-**DeepSeek models** (OPENAI_BASE_URL=https://api.deepseek.com):
-```bash
-LLM_MODEL=deepseek-chat      # Recommended, cost-effective
-# LLM_MODEL=deepseek-reasoner # For complex reasoning
-```
-
-**OpenRouter models** (OPENAI_BASE_URL=https://openrouter.ai/api/v1):
-```bash
-LLM_MODEL=google/gemini-flash-1.5-8b  # Fast, cheap
-# LLM_MODEL=anthropic/claude-3-5-sonnet # High quality
-# See all models: https://openrouter.ai/models
-```
-
-### Email Template
-
-Edit `templates/email_template.html` to customize the email design.
+- **RSS Feeds**: Edit `config/feeds.py`
+- **LLM Prompt**: Edit `DIGEST_GENERATION_PROMPT` in `config/feeds.py`
+- **LLM Model**: Change `LLM_MODEL` in `.env` (see `.env.example` for options)
+- **Email Template**: Edit `templates/email_template.html`
 
 ## Project Structure
 
@@ -265,35 +126,16 @@ rss-digest/
 
 ## Cost Estimate
 
-**With DeepSeek** (`deepseek-chat`):
-- **Per digest**: ~$0.001-0.002 (50 articles)
-- **Monthly**: ~$0.004-0.008 (less than 1 cent!)
-
-**With OpenRouter** (`google/gemini-flash-1.5-8b`):
-- **Per digest**: ~$0.0017 (50 articles)
-- **Monthly**: ~$0.007 (less than 1 cent!)
-
-**With OpenAI** (`gpt-4o-mini`):
-- **Per digest**: ~$0.01-0.02 (50 articles)
-- **Monthly**: ~$0.04-0.08 (about 5-8 cents)
-
-**SendGrid**: Free tier (100 emails/day)
+- **DeepSeek**: ~$0.007/month (less than 1 cent!)
+- **OpenRouter (Gemini)**: ~$0.007/month
+- **OpenAI (GPT-4o-mini)**: ~$0.05/month
+- **SendGrid**: Free (100 emails/day)
 
 ## Troubleshooting
 
-**No articles?**
-```bash
-uv run python src/main.py --days 14 --verbose
-```
-
-**Email not sending?**
-- Verify sender email in SendGrid
-- Check `digest.log` for errors
-
-**LLM errors?**
-- Verify your LLM provider API key is correct
-- Check that OPENAI_BASE_URL is set correctly for your provider
-- Check account balance/credits
+- **No articles**: Try `--days 14 --verbose`
+- **Email fails**: Verify sender in SendGrid, check `digest.log`
+- **LLM errors**: Verify API key, check `OPENAI_BASE_URL`, check credits
 
 ## Contributing
 

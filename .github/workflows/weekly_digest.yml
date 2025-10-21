@@ -63,11 +63,11 @@ jobs:
           name: digest-html-${{ github.run_number }}
           path: |
             digest_*.html
-            rss_digest.log
+            digest.log
           retention-days: 30
 
       - name: Report status
         if: failure()
         run: |
           echo "::error::Digest workflow failed. Check logs for details."
-          cat rss_digest.log || echo "Log file not found"
+          cat digest.log || echo "Log file not found"

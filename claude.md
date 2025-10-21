@@ -16,7 +16,7 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 
 **Components**:
 1. `rss_fetcher.py` - Fetches articles from RSS feeds using feedparser
-2. `llm_processor.py` - Sends articles to OpenRouter API for digest generation
+2. `llm_processor.py` - Sends articles to any OpenAI-compatible API for digest generation
 3. `email_sender.py` - Sends HTML digest via SendGrid
 4. `main.py` - Orchestrates the workflow
 
@@ -50,11 +50,12 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 - `RSSFetcher` class with single public method: `fetch_recent_articles(days)`
 - Uses `feedparser` library
 - Filters articles by publication date
-- Returns list of dicts with: title, link, published, source, description
+- Returns list of dicts with: `url`, `title`, `rss_summary`, `feed_category`, `published_date`
 
 ### src/llm_processor.py
-- `LLMProcessor` class wraps OpenRouter API
-- Uses OpenAI SDK (OpenRouter is OpenAI-compatible)
+- `LLMProcessor` class wraps any OpenAI-compatible API
+- Uses OpenAI SDK with configurable `base_url`
+- Supports OpenAI, DeepSeek, OpenRouter, and other compatible providers
 - `generate_digest_from_articles()` - single LLM call for entire digest
 - Tracks token usage for cost estimation
 - No streaming, no retries (fails fast)
@@ -73,11 +74,14 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 ## Environment Variables
 
 Required in `.env`:
-- `OPENROUTER_API_KEY` - From openrouter.ai/keys
-- `LLM_MODEL` - Model identifier (e.g., google/gemini-flash-1.5-8b)
+- `OPENAI_API_KEY` - API key from your chosen provider (OpenAI, DeepSeek, OpenRouter, etc.)
+- `LLM_MODEL` - Model identifier (e.g., `gpt-4o-mini`, `deepseek-chat`, `google/gemini-flash-1.5-8b`)
 - `SENDGRID_API_KEY` - From SendGrid dashboard
-- `RECIPIENT_EMAIL` - Where to send digest
 - `FROM_EMAIL` - Must be verified in SendGrid
+- `RECIPIENT_EMAIL` - Where to send digest
+
+Optional in `.env`:
+- `OPENAI_BASE_URL` - Base URL for API provider. Leave empty for OpenAI, set to `https://api.deepseek.com` for DeepSeek, or `https://openrouter.ai/api/v1` for OpenRouter
 
 ## Common Tasks
 
@@ -93,8 +97,11 @@ RSS_FEEDS = {
 ### Changing Digest Format
 Edit `DIGEST_GENERATION_PROMPT` in `config/feeds.py`. The prompt is the entire UI for digest customization.
 
-### Switching LLM Model
-Change `LLM_MODEL` in `.env`. Must be an OpenRouter-compatible model identifier.
+### Switching LLM Provider or Model
+Change `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `LLM_MODEL` in `.env`:
+- **OpenAI**: Leave `OPENAI_BASE_URL` empty, use models like `gpt-4o-mini`
+- **DeepSeek**: Set `OPENAI_BASE_URL=https://api.deepseek.com`, use `deepseek-chat`
+- **OpenRouter**: Set `OPENAI_BASE_URL=https://openrouter.ai/api/v1`, use any OpenRouter model
 
 ### Testing Changes
 ```bash
@@ -133,9 +140,10 @@ Requires Python 3.13+ (specified in `pyproject.toml`)
 - Use `--verbose` to see what's being fetched
 
 ### "Failed to generate digest"
-- Check OpenRouter API key is valid
-- Verify model name is correct
-- Check OpenRouter account has credits
+- Check `OPENAI_API_KEY` is valid for your provider
+- Verify `OPENAI_BASE_URL` is set correctly (empty for OpenAI, provider URL otherwise)
+- Verify model name is correct for your provider
+- Check account has credits/balance
 - Review `digest.log` for API errors
 
 ### "Failed to send email"
@@ -146,6 +154,7 @@ Requires Python 3.13+ (specified in `pyproject.toml`)
 ### Import errors
 - Run `uv sync` to install dependencies
 - Ensure you're using `uv run python` to run scripts
+- Note: `main.py` uses relative imports (e.g., `from rss_fetcher import RSSFetcher`) which work because scripts are run from the project root with `uv run python src/main.py`
 
 ## File Locations
 
@@ -164,11 +173,15 @@ Workflow in `.github/workflows/weekly_digest.yml`:
 
 ## Cost Considerations
 
-With default settings (Gemini Flash 1.5 8B):
-- ~15K input tokens per 50 articles
-- ~2K output tokens for digest
-- Cost: ~$0.0017 per run
-- Monthly (4 runs): ~$0.007
+Typical costs per run (50 articles):
+- **DeepSeek** (`deepseek-chat`): ~$0.001-0.002
+- **OpenRouter** (`google/gemini-flash-1.5-8b`): ~$0.0017
+- **OpenAI** (`gpt-4o-mini`): ~$0.01-0.02
+
+Monthly costs (4 weekly runs):
+- **DeepSeek**: ~$0.007 (less than 1 cent)
+- **OpenRouter**: ~$0.007 (less than 1 cent)
+- **OpenAI**: ~$0.05 (about 5 cents)
 
 SendGrid free tier: 100 emails/day (more than enough)
 
@@ -186,11 +199,12 @@ SendGrid free tier: 100 emails/day (more than enough)
 - Faster execution
 - Cost difference is negligible vs. multiple calls
 
-### Why OpenRouter?
-- Access to multiple models via one API
-- Competitive pricing
-- Simple OpenAI-compatible interface
-- No vendor lock-in (can switch models easily)
+### Why OpenAI-Compatible APIs?
+- Supports multiple providers (OpenAI, DeepSeek, OpenRouter, etc.)
+- Simple, standardized interface via OpenAI SDK
+- Configurable base URL allows easy provider switching
+- No vendor lock-in (can switch providers with just env vars)
+- Access to best price/performance for your needs
 
 ### Why SendGrid?
 - Generous free tier
@@ -228,7 +242,7 @@ uv sync
 cat digest.log
 
 # Validate environment
-uv run python -c "from dotenv import load_dotenv; import os; load_dotenv(); print('OK' if all([os.getenv(v) for v in ['OPENROUTER_API_KEY', 'SENDGRID_API_KEY', 'FROM_EMAIL', 'RECIPIENT_EMAIL']]) else 'Missing vars')"
+uv run python -c "from dotenv import load_dotenv; import os; load_dotenv(); print('OK' if all([os.getenv(v) for v in ['OPENAI_API_KEY', 'SENDGRID_API_KEY', 'FROM_EMAIL', 'RECIPIENT_EMAIL']]) else 'Missing vars')"
 ```
 
 ## Code Style
@@ -238,6 +252,7 @@ uv run python -c "from dotenv import load_dotenv; import os; load_dotenv(); prin
 - Docstrings for public methods
 - Simple, readable code over clever optimizations
 - Logging at INFO level for user actions, DEBUG for details
+- Emojis: Acceptable in user-facing content (email templates, final output) but not in code, logs, or technical documentation
 
 ## Testing Philosophy
 

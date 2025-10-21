@@ -152,24 +152,6 @@ Summary: {article.get('rss_summary', 'No summary available')}
 
         return "\n\n---\n\n".join(formatted)
 
-    def estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
-        """
-        Estimate cost based on token usage.
-        Pricing for google/gemini-flash-1.5-8b:
-        - Input: $0.075 per 1M tokens
-        - Output: $0.30 per 1M tokens
-
-        Args:
-            input_tokens: Number of input tokens
-            output_tokens: Number of output tokens
-
-        Returns:
-            Estimated cost in USD
-        """
-        input_cost = (input_tokens / 1_000_000) * 0.075
-        output_cost = (output_tokens / 1_000_000) * 0.30
-        return input_cost + output_cost
-
     def get_token_usage_summary(self) -> Dict:
         """
         Get summary of token usage.
@@ -177,16 +159,8 @@ Summary: {article.get('rss_summary', 'No summary available')}
         Returns:
             Dictionary with token usage statistics
         """
-        # Rough estimate: 60% input, 40% output
-        estimated_input = int(self.total_tokens_used * 0.6)
-        estimated_output = int(self.total_tokens_used * 0.4)
-        estimated_cost = self.estimate_cost(estimated_input, estimated_output)
-
         return {
-            'total_tokens': self.total_tokens_used,
-            'estimated_input_tokens': estimated_input,
-            'estimated_output_tokens': estimated_output,
-            'estimated_cost_usd': round(estimated_cost, 4)
+            'total_tokens': self.total_tokens_used
         }
 
 
