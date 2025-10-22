@@ -8,7 +8,7 @@ A simple, stateless system to fetch RSS articles, generate AI-powered digests, a
 
 - **Stateless & Simple**: No database, no state tracking, no complex setup
 - **AI-Powered Digests**: Uses any OpenAI-compatible LLM API (OpenAI, DeepSeek, OpenRouter, etc.)
-- **Email Delivery**: Clean HTML digests sent via SendGrid
+- **Email Delivery**: Clean HTML digests sent via Gmail SMTP (Google Workspace)
 - **Flexible Scheduling**: Run locally, via cron, or GitHub Actions
 - **Cost-Effective**: ~$0.007/month with Gemini Flash or DeepSeek (~1 cent!)
 - **Easy to Customize**: Simple config files for feeds and prompts
@@ -21,7 +21,7 @@ RSS Feeds → Fetch Articles → LLM Analysis → Email Digest
 
 1. **Fetch**: Pull articles from configured RSS feeds (default: last 7 days)
 2. **Analyze**: Send all articles to LLM in a single API call to generate digest
-3. **Send**: Email the HTML digest via SendGrid
+3. **Send**: Email the HTML digest via Gmail SMTP
 
 That's it. No database, no state, no tracking.
 
@@ -53,10 +53,12 @@ uv run python src/main.py
 - **DeepSeek** (recommended): [platform.deepseek.com](https://platform.deepseek.com) → Set `OPENAI_BASE_URL=https://api.deepseek.com`
 - **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys) → Set `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
 
-**SendGrid** (Email):
-- Sign up at [sendgrid.com](https://sendgrid.com) (free tier: 100 emails/day)
-- Settings → API Keys → Create API Key
-- Settings → Sender Authentication → Verify your email
+**Google Workspace / Gmail** (Email):
+- Enable 2-Factor Authentication on your Google Account: [myaccount.google.com/security](https://myaccount.google.com/security)
+- Generate an App Password: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+  - Select app: "Mail"
+  - Select device: "Other (Custom name)" - enter "RSS Digest"
+  - Click "Generate" and copy the 16-character password
 
 ### 2. Configure Environment
 
@@ -94,7 +96,7 @@ uv run python src/main.py
 
 ## Automation
 
-**GitHub Actions**: Settings → Secrets → Add: `OPENAI_API_KEY`, `OPENAI_BASE_URL` (if needed), `LLM_MODEL`, `SENDGRID_API_KEY`, `FROM_EMAIL`, `RECIPIENT_EMAIL`
+**GitHub Actions**: Settings → Secrets → Add: `OPENAI_API_KEY`, `OPENAI_BASE_URL` (if needed), `LLM_MODEL`, `SMTP_PASSWORD`, `FROM_EMAIL`, `RECIPIENT_EMAIL`
 
 **Cron**: `0 9 * * 1 cd /path/to/rss-digest && uv run python src/main.py`
 
@@ -129,12 +131,12 @@ rss-digest/
 - **DeepSeek**: ~$0.007/month (less than 1 cent!)
 - **OpenRouter (Gemini)**: ~$0.007/month
 - **OpenAI (GPT-4o-mini)**: ~$0.05/month
-- **SendGrid**: Free (100 emails/day)
+- **Gmail SMTP**: Free (included with Google Workspace or personal Gmail)
 
 ## Troubleshooting
 
 - **No articles**: Try `--days 14 --verbose`
-- **Email fails**: Verify sender in SendGrid, check `digest.log`
+- **Email fails**: Verify Gmail App Password is correct, ensure 2FA is enabled, check `digest.log`
 - **LLM errors**: Verify API key, check `OPENAI_BASE_URL`, check credits
 
 ## Contributing

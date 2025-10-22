@@ -42,7 +42,7 @@ class DigestOrchestrator:
     def __init__(
         self,
         openai_api_key: str,
-        sendgrid_api_key: str,
+        smtp_password: str,
         from_email: str,
         recipient_email: str,
         openai_base_url: Optional[str] = None
@@ -52,14 +52,14 @@ class DigestOrchestrator:
 
         Args:
             openai_api_key: OpenAI-compatible API key
-            sendgrid_api_key: SendGrid API key
-            from_email: Sender email address (must be verified in SendGrid)
+            smtp_password: Google App Password for SMTP authentication
+            from_email: Sender email address (Gmail address)
             recipient_email: Email address to send digest to
             openai_base_url: Base URL for OpenAI-compatible API (optional)
         """
         self.rss_fetcher = RSSFetcher(RSS_FEEDS)
         self.llm_processor = LLMProcessor(openai_api_key, base_url=openai_base_url)
-        self.email_sender = EmailSender(sendgrid_api_key, from_email)
+        self.email_sender = EmailSender(smtp_password, from_email)
         self.recipient_email = recipient_email
 
         logger.info("Digest orchestrator initialized")
@@ -225,7 +225,7 @@ def main():
     required_vars = [
         'OPENAI_API_KEY',
         'LLM_MODEL',
-        'SENDGRID_API_KEY',
+        'SMTP_PASSWORD',
         'FROM_EMAIL',
         'RECIPIENT_EMAIL'
     ]
@@ -240,7 +240,7 @@ def main():
     # Initialize orchestrator
     orchestrator = DigestOrchestrator(
         openai_api_key=os.getenv('OPENAI_API_KEY'),
-        sendgrid_api_key=os.getenv('SENDGRID_API_KEY'),
+        smtp_password=os.getenv('SMTP_PASSWORD'),
         from_email=os.getenv('FROM_EMAIL'),
         recipient_email=os.getenv('RECIPIENT_EMAIL'),
         openai_base_url=os.getenv('OPENAI_BASE_URL')

@@ -46,7 +46,7 @@ venv.bak/
 
 # Logs
 *.log
-rss_digest.log
+digest.log
 
 # Generated Digest Files
 digest_*.html

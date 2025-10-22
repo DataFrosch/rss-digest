@@ -17,7 +17,7 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 **Components**:
 1. `rss_fetcher.py` - Fetches articles from RSS feeds using feedparser
 2. `llm_processor.py` - Sends articles to any OpenAI-compatible API for digest generation
-3. `email_sender.py` - Sends HTML digest via SendGrid
+3. `email_sender.py` - Sends HTML digest via Gmail SMTP (Google Workspace)
 4. `main.py` - Orchestrates the workflow
 
 **No Database**: Articles are fetched fresh each run based on date range. Nothing is stored between runs.
@@ -61,8 +61,8 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 - No streaming, no retries (fails fast)
 
 ### src/email_sender.py
-- `EmailSender` class wraps SendGrid API
-- `send_digest()` - sends HTML email
+- `EmailSender` class wraps Gmail SMTP
+- `send_digest()` - sends HTML email via SMTP
 - `save_digest_html()` - saves to file for testing
 - Uses template from `templates/email_template.html`
 
@@ -76,8 +76,8 @@ RSS Feeds → fetch_recent_articles() → generate_digest() → send_email()
 Required in `.env`:
 - `OPENAI_API_KEY` - API key from your chosen provider (OpenAI, DeepSeek, OpenRouter, etc.)
 - `LLM_MODEL` - Model identifier (e.g., `gpt-4o-mini`, `deepseek-chat`, `google/gemini-flash-1.5-8b`)
-- `SENDGRID_API_KEY` - From SendGrid dashboard
-- `FROM_EMAIL` - Must be verified in SendGrid
+- `SMTP_PASSWORD` - Google App Password for Gmail SMTP
+- `FROM_EMAIL` - Gmail address for sending emails
 - `RECIPIENT_EMAIL` - Where to send digest
 
 Optional in `.env`:
@@ -122,12 +122,13 @@ This processes 5 articles, doesn't send email, and shows detailed logs.
 
 Managed via `pyproject.toml`:
 - `feedparser` - RSS parsing
-- `openai` - OpenRouter API client
-- `sendgrid` - Email sending
+- `openai` - OpenAI-compatible API client
 - `python-dateutil` - Date handling
 - `python-dotenv` - Environment variables
 
 Install with: `uv sync`
+
+Note: Email sending uses Python's built-in `smtplib` and `email.mime` modules (no external dependency needed)
 
 ### Python Version
 Requires Python 3.13+ (specified in `pyproject.toml`)
@@ -147,9 +148,10 @@ Requires Python 3.13+ (specified in `pyproject.toml`)
 - Review `digest.log` for API errors
 
 ### "Failed to send email"
-- Verify FROM_EMAIL is verified in SendGrid
-- Check SendGrid API key permissions (needs "Mail Send")
-- Review SendGrid dashboard for bounce/error details
+- Verify FROM_EMAIL is a valid Gmail address
+- Check SMTP_PASSWORD is a valid Google App Password (not your regular Gmail password)
+- Ensure 2-Factor Authentication is enabled on your Google Account
+- Review `digest.log` for specific SMTP error messages
 
 ### Import errors
 - Run `uv sync` to install dependencies
@@ -183,8 +185,6 @@ Monthly costs (4 weekly runs):
 - **OpenRouter**: ~$0.007 (less than 1 cent)
 - **OpenAI**: ~$0.05 (about 5 cents)
 
-SendGrid free tier: 100 emails/day (more than enough)
-
 ## Design Decisions
 
 ### Why No Database?
@@ -206,11 +206,12 @@ SendGrid free tier: 100 emails/day (more than enough)
 - No vendor lock-in (can switch providers with just env vars)
 - Access to best price/performance for your needs
 
-### Why SendGrid?
-- Generous free tier
-- Reliable delivery
-- Simple API
-- Industry standard
+### Why Gmail SMTP?
+- Free (included with any Gmail account)
+- No API key registration or verification required (just App Password)
+- Reliable delivery with Google's infrastructure
+- No third-party service dependencies
+- Uses standard SMTP protocol (built into Python)
 
 ## Future Considerations
 
@@ -242,7 +243,7 @@ uv sync
 cat digest.log
 
 # Validate environment
-uv run python -c "from dotenv import load_dotenv; import os; load_dotenv(); print('OK' if all([os.getenv(v) for v in ['OPENAI_API_KEY', 'SENDGRID_API_KEY', 'FROM_EMAIL', 'RECIPIENT_EMAIL']]) else 'Missing vars')"
+uv run python -c "from dotenv import load_dotenv; import os; load_dotenv(); print('OK' if all([os.getenv(v) for v in ['OPENAI_API_KEY', 'SMTP_PASSWORD', 'FROM_EMAIL', 'RECIPIENT_EMAIL']]) else 'Missing vars')"
 ```
 
 ## Code Style

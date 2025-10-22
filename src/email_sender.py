@@ -1,29 +1,30 @@
 """
 Email Sender Module
-Handles email composition and sending via SendGrid.
+Handles email composition and sending via Google Workspace SMTP.
 """
 
 import logging
+import smtplib
 from datetime import datetime
 from typing import Optional
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 logger = logging.getLogger(__name__)
 
 
 class EmailSender:
-    """Sends digest emails via SendGrid."""
+    """Sends digest emails via Google Workspace SMTP."""
 
-    def __init__(self, api_key: str, from_email: str):
+    def __init__(self, smtp_password: str, from_email: str):
         """
         Initialize email sender.
 
         Args:
-            api_key: SendGrid API key
-            from_email: Sender email address (from FROM_EMAIL env variable)
+            smtp_password: Google App Password for SMTP authentication
+            from_email: Sender email address (Gmail address)
         """
-        self.client = SendGridAPIClient(api_key)
+        self.smtp_password = smtp_password
         self.from_email = from_email
         logger.info(f"Email sender initialized with from_email: {from_email}")
 
@@ -66,24 +67,33 @@ class EmailSender:
             # Create email
             subject = f"Your Weekly RSS Digest: {date_range} ({article_count} articles)"
 
-            from_email = Email(self.from_email, "RSS Digest")
-            to_email = To(recipient_email)
-            content = Content("text/html", full_html)
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = f"RSS Digest <{self.from_email}>"
+            msg['To'] = recipient_email
 
-            message = Mail(from_email, to_email, subject, content)
+            # Attach HTML content
+            html_part = MIMEText(full_html, 'html')
+            msg.attach(html_part)
 
-            # Send email
-            logger.info(f"Sending digest to {recipient_email}")
-            mail_json = message.get()
-            response = self.client.client.mail.send.post(request_body=mail_json)
+            # Send email via SMTP
+            logger.info(f"Sending digest to {recipient_email} via SMTP")
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(self.from_email, self.smtp_password)
+            server.send_message(msg)
+            server.quit()
 
-            if response.status_code in [200, 201, 202]:
-                logger.info(f"Email sent successfully (status: {response.status_code})")
-                return True
-            else:
-                logger.error(f"Failed to send email (status: {response.status_code})")
-                return False
+            logger.info("Email sent successfully via SMTP")
+            return True
 
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP authentication failed: {str(e)}")
+            logger.error("Please verify your Gmail address and App Password")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error: {str(e)}")
+            return False
         except Exception as e:
             logger.error(f"Error sending email: {str(e)}")
             return False
@@ -101,28 +111,36 @@ class EmailSender:
         try:
             test_content = """
             <h1>Test Email from RSS Digest</h1>
-            <p>This is a test email to verify your SendGrid configuration.</p>
+            <p>This is a test email to verify your Gmail SMTP configuration.</p>
             <p>If you received this, your email setup is working correctly!</p>
             <p><small>Sent at: {}</small></p>
             """.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-            from_email = Email(self.from_email, "RSS Digest")
-            to_email = To(recipient_email)
-            subject = "Test Email - RSS Digest"
-            content = Content("text/html", test_content)
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = "Test Email - RSS Digest"
+            msg['From'] = f"RSS Digest <{self.from_email}>"
+            msg['To'] = recipient_email
 
-            message = Mail(from_email, to_email, subject, content)
+            html_part = MIMEText(test_content, 'html')
+            msg.attach(html_part)
 
-            mail_json = message.get()
-            response = self.client.client.mail.send.post(request_body=mail_json)
+            # Send via SMTP
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(self.from_email, self.smtp_password)
+            server.send_message(msg)
+            server.quit()
 
-            if response.status_code in [200, 201, 202]:
-                logger.info(f"Test email sent successfully")
-                return True
-            else:
-                logger.error(f"Failed to send test email")
-                return False
+            logger.info("Test email sent successfully via SMTP")
+            return True
 
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP authentication failed: {str(e)}")
+            logger.error("Please verify your Gmail address and App Password")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error: {str(e)}")
+            return False
         except Exception as e:
             logger.error(f"Error sending test email: {str(e)}")
             return False
@@ -238,16 +256,16 @@ class EmailSender:
             return False
 
 
-def test_email_sender(api_key: str, from_email: str, recipient: str) -> None:
+def test_email_sender(smtp_password: str, from_email: str, recipient: str) -> None:
     """
     Test email sender functionality.
 
     Args:
-        api_key: SendGrid API key
-        from_email: Sender email address
+        smtp_password: Google App Password
+        from_email: Sender email address (Gmail)
         recipient: Test recipient email address
     """
-    sender = EmailSender(api_key, from_email)
+    sender = EmailSender(smtp_password, from_email)
 
     print("\n=== Email Sender Test ===")
     print(f"Sending test email to: {recipient}")
@@ -272,11 +290,11 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    api_key = os.getenv("SENDGRID_API_KEY")
+    smtp_password = os.getenv("SMTP_PASSWORD")
     from_email = os.getenv("FROM_EMAIL")
     recipient = os.getenv("RECIPIENT_EMAIL")
 
-    if api_key and from_email and recipient:
-        test_email_sender(api_key, from_email, recipient)
+    if smtp_password and from_email and recipient:
+        test_email_sender(smtp_password, from_email, recipient)
     else:
-        print("Please set SENDGRID_API_KEY, FROM_EMAIL, and RECIPIENT_EMAIL in .env file")
+        print("Please set SMTP_PASSWORD, FROM_EMAIL, and RECIPIENT_EMAIL in .env file")
