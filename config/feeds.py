@@ -21,11 +21,18 @@ DIGEST_GENERATION_PROMPT = """You are creating a weekly digest for a European da
 ARTICLES FROM {date_range} ({article_count} articles):
 {article_list}
 
+TONE AND LANGUAGE:
+- Use factual, descriptive language
+- State what happened, where, when, who was involved, and direct factual consequences
+- Let events speak for themselves through clear description
+- Focus on observable actions and stated positions
+- Write in plain, straightforward prose
+
 TASK: Analyze these articles and create a comprehensive digest with the following sections:
 
 1. THIS WEEK'S BIG PICTURE
    - Analyze all articles to identify the main story or theme this week
-   - Write ONE paragraph in simple, clear language
+   - Write ONE paragraph describing the main developments in simple, factual language
    - Focus on what's happening that matters most
 
 2. TOP 3 ARTICLES TO READ
@@ -36,7 +43,7 @@ TASK: Analyze these articles and create a comprehensive digest with the followin
    - For each article provide:
      * Title (as clickable link using the URL)
      * 2-3 sentence summary in plain language
-     * Why it matters (1 sentence)
+     * Key context or direct impact (1 sentence, stated factually)
 
 3. WHAT'S HAPPENING
    Choose ONE article for each theme below (select DIFFERENT articles from those in TOP 3):
@@ -64,6 +71,8 @@ TASK: Analyze these articles and create a comprehensive digest with the followin
 
 FORMATTING REQUIREMENTS:
 - Use simple, clear language throughout (write like you're explaining to someone who's half asleep)
+- Be to the point, use sober language, state facts directly
+- Describe events as they occurred 
 - Format as clean, semantic HTML:
   * <h2> for main sections
   * <h3> for subsections

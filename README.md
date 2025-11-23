@@ -23,16 +23,25 @@ RSS Feeds → Fetch Articles → LLM Analysis → Email Digest
 2. **Analyze**: Send all articles to LLM in a single API call to generate digest
 3. **Send**: Email the HTML digest via Gmail SMTP
 
-That's it. No database, no state, no tracking.
-
 ## Quick Start
 
+1. **Clone the repo**
 ```bash
-# 1. Install uv (Python package manager)
+   git clone git@github.com:DataFrosch/rss-digest.git
+   ```
+2. **Add your favorite RSS feeds** in `config/feeds.py`.
+3. **Set your LLM API key** (DeepSeek, OpenAI, or OpenRouter).
+4. **Tweak the prompt** to match your interests.
+5. **Set up GitHub Actions** to automate your weekly digest.
+
+## Detailed setup
+
+```bash
+# 1. Install uv (Python package manager) if you don't have it
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Clone and setup
-git clone <your-repo-url>
+git clone git@github.com:DataFrosch/rss-digest.git
 cd rss-digest
 uv sync
 
@@ -43,8 +52,6 @@ cp .env.example .env
 # 4. Run
 uv run python src/main.py
 ```
-
-## Setup
 
 ### 1. Get API Keys
 
